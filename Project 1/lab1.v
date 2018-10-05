@@ -5,10 +5,10 @@
  * Description: The top module of this lab 
  */
 module calculator(
-	input CLK,
-	input [7:0] SW,
-	input [3:0] BTN,
-	output [7:0] LED,
+	input CLK, // onboard 50Mhz clock 
+	input [7:0] SW, // the eight board switches 
+	input [3:0] BTN, // four board push buttons 
+	output [7:0] LED, // eight board LEDs
 	output [6:0] SEG,
 	output DP,
 	output [3:0] AN
@@ -18,9 +18,17 @@ module calculator(
 	wire [15:0] counter;
 	wire clk_en;
 	
-	// STEP 2 - implement the calculator logic here
-	
-	
+	// STEP 2 - implement the calculator logic here 
+        always@(*) bgein
+        casez(BTN)
+        4'b0000 : display_num = SW;
+        4'b1000 : display_num = SW[7:4]+SW[3:0];      
+        4'b0100 : display_num = SW[7:4]*SW[3:0];
+        4'b0010 : display_num = SW[7:4]^SW[3:0];
+        //4'b0001 : display_num =  ;
+        4'b???? : display_num = counter;
+
+
 	// END STEP 2
 	
 	assign LED = display_num[7:0];
@@ -64,29 +72,11 @@ endmodule // calculator
  */
 module segmentFormatter(
 	input [3:0] num_pi,
-	output reg [6:0] disp_po		 
+	output reg [6:0] disp_po
 );
 	
 // STEP 1: Implement the segmentFormatter module
-always @(*) begin
-		case(num_pi)                //6543210
-		4'b0000:	disp_po[6:0] = ~7'b0111111; //0
-		4'b0001:	disp_po[6:0] = ~7'b0000110; //1
-		4'b0010:	disp_po[6:0] = ~7'b1011011; //2
-		4'b0011:	disp_po[6:0] = ~7'b1001111; //3
-		4'b0100:	disp_po[6:0] = ~7'b1100110; //4
-		4'b0101:	disp_po[6:0] = ~7'b1101101; //5
-		4'b0110:	disp_po[6:0] = ~7'b1111101; //6
-		4'b0111:	disp_po[6:0] = ~7'b0000111; //7
-		4'b1000:	disp_po[6:0] = ~7'b1111111; //8
-		4'b1001:	disp_po[6:0] = ~7'b1100111; //9
-		4'b1010:	disp_po[6:0] = ~7'b1110111; //10 - A
-		4'b1011:	disp_po[6:0] = ~7'b1111100; //11 - B
-		4'b1100:	disp_po[6:0] = ~7'b0111001; //12 - C
-		4'b1101:	disp_po[6:0] = ~7'b1011110; //13 - D
-		4'b1110:	disp_po[6:0] = ~7'b1111001; //14 - E
-		4'b1111:	disp_po[6:0] = ~7'b1110001; //15 - F
-		endcase
+
 
 // END STEP 1
 endmodule // segmentFormatter
