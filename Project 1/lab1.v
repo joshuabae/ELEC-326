@@ -26,7 +26,7 @@ module calculator(
         	4'b1000 : display_num = SW[7:4]+SW[3:0];      
         	4'b0100 : display_num = SW[7:4]*SW[3:0];
         	4'b0010 : display_num = SW[7:4]^SW[3:0];
-        	//4'b0001 : display_num =  ;
+        	4'b0001 : display_num[1:0] = {SW[3]&~SW[1], SW[2]&~SW[1] + SW[3]&SW[2] + SW[3]&~SW[0]}; 
         	4'b???? : display_num = counter;
 		endcase	
         end
