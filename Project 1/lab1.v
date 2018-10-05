@@ -5,33 +5,32 @@
  * Description: The top module of this lab 
  */
 module calculator(
-	input CLK, // onboard 50Mhz clock 
-	input [7:0] SW, // the eight board switches 
-	input [3:0] BTN, // four board push buttons 
-	output [7:0] LED, // eight board LEDs
+	input CLK, 
+	input [7:0] SW,  
+	input [3:0] BTN, 
+	output [7:0] LED,
 	output [6:0] SEG,
 	output DP,
 	output [3:0] AN
 ); 
  
-	wire [15:0] display_num; //TODO: Change back to reg
+	reg  [15:0] display_num; //TODO: Change back to reg
 	wire [15:0] counter;
 	wire clk_en;
 	
-	assign display_num = {8’h00, SW};
-	// STEP 2 - implement the calculator logic here 
+        // STEP 2 - implement the calculator logic here 
         always@(*) begin 
-			/*
-			casez(BTN)
+		
+                casez(BTN)
         	4'b0000 : display_num = SW;
         	4'b1000 : display_num = SW[7:4]+SW[3:0];      
         	4'b0100 : display_num = SW[7:4]*SW[3:0];
         	4'b0010 : display_num = SW[7:4]^SW[3:0];
         	//4'b0001 : display_num =  ;
         	4'b???? : display_num = counter;
-			*/
+		endcase	
         end
-
+        
 	// END STEP 2
 	
 	assign LED = display_num[7:0];
@@ -99,7 +98,7 @@ always @(*) begin
 		4'b1110:	disp_po[6:0] = ~7'b1111001; //14 - E
 		4'b1111:	disp_po[6:0] = ~7'b1110001; //15 - F
 		endcase
-
+end
 // END STEP 1
 endmodule // segmentFormatter
 
