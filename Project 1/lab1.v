@@ -13,21 +13,24 @@ module calculator(
 	output DP,
 	output [3:0] AN
 ); 
-	
-	reg [15:0] display_num;
+ 
+	wire [15:0] display_num; //TODO: Change back to reg
 	wire [15:0] counter;
 	wire clk_en;
 	
+	assign display_num = {8’h00, SW};
 	// STEP 2 - implement the calculator logic here 
-        always@(*) bgein
-        casez(BTN)
-        4'b0000 : display_num = SW;
-        4'b1000 : display_num = SW[7:4]+SW[3:0];      
-        4'b0100 : display_num = SW[7:4]*SW[3:0];
-        4'b0010 : display_num = SW[7:4]^SW[3:0];
-        //4'b0001 : display_num =  ;
-        4'b???? : display_num = counter;
-
+        always@(*) begin 
+			/*
+			casez(BTN)
+        	4'b0000 : display_num = SW;
+        	4'b1000 : display_num = SW[7:4]+SW[3:0];      
+        	4'b0100 : display_num = SW[7:4]*SW[3:0];
+        	4'b0010 : display_num = SW[7:4]^SW[3:0];
+        	//4'b0001 : display_num =  ;
+        	4'b???? : display_num = counter;
+			*/
+        end
 
 	// END STEP 2
 	
