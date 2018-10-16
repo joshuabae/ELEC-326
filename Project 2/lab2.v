@@ -210,57 +210,49 @@ endmodule // clock_fsm
 	input increment_hour_pi,
 	
 	output reg alarm_triggered_po);
-        
+ 
 	initial begin
 		minutes_po <= 0;
 		hours_po <= 4'd12;
 		alarm_triggered_po <= 0;
 	end
-          
+ 
 	 // STEP 1 - implement the alarm state machine
-         
-         //handles minutes increment
-
-         always@(*)
-	 begin 
-           
-          //handles alarm trigger
-          	  
-          if(alarm_en_pi      == 1'b1 
-          && clock_hours_pi   == hours_po
-          && clock_minutes_pi == minutes_po  )
-          begin
-	  alarm_triggered_po = 1'b1;
-          end
-          
-          //handles minutes increment 
-
-          if(increment_minute_pi == 1'b1)
-          begin
-          minutes_po = minutes_po + 1'b1;
-
-         	if(minutes_po == 6'b111100)
-                begin
-                minutes_po = 6'b0;
-                end 
-
-          end
-
-         //handles hours increment 
-
-          if(increment_hour_pi == 1'b1)
-          begin
-          hours_po = hours__po + 1'b1;
-         
-                if(hours_po == 4'b1100 )
-                begin
-                hours_po = 4'b0;
-                end
-
-          end
-         end
-         
-
+	always@(posedge clk_pi)
+	begin
+	 if(alarm_en_pi      == 1'b1 
+             && clock_hours_pi   == hours_po
+             && clock_minutes_pi == minutes_po  )
+             begin
+         alarm_triggered_po = 1'b1;
+             end
+             
+             //handles minutes increment 
+   
+             if(increment_minute_pi == 1'b1)
+             begin
+             minutes_po = minutes_po + 1'b1;
+   
+                if(minutes_po == 6'b111100)
+                   begin
+                   minutes_po = 6'b0;
+                   end 
+   
+             end
+   
+            //handles hours increment 
+   
+             if(increment_hour_pi == 1'b1)
+             begin
+             hours_po = hours_po + 1'b1;
+            
+                   if(hours_po == 4'b1100 )
+                   begin
+                   hours_po = 4'b0;
+                   end
+   
+             end
+	end
 	// END STEP 1
  
  
