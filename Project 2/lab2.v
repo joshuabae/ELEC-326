@@ -89,6 +89,7 @@ module alarm_clock (
 		
 		.increment_minute_pi(BTN_down[0] & BTN[2]),
 		.increment_hour_pi(BTN_down[1] & BTN[2]),
+		.snooze_btn(BTN[4]),
 		
 		.alarm_triggered_po(alarm0_triggered)); 
 		
@@ -103,6 +104,7 @@ module alarm_clock (
 		
 		.increment_minute_pi(BTN_down[0] & BTN[3]),
 		.increment_hour_pi(BTN_down[1] & BTN[3]),
+		.snooze_btn(BTN[4]),
 		
 		.alarm_triggered_po(alarm1_triggered)); 
 		
@@ -179,8 +181,46 @@ module clock_fsm(
 		if(increment_minute_pi || increment_hour_pi)
 			blink_en_po <= 0;
 		
+	if(clk_en_pi == 1'b1)
+    begin
+    seconds_po = seconds_po + 1'b1;             
+        if(seconds_po == 6'b111100)
+        begin
+        seconds_po = 6'b0;
+        minutes_po = minutes_po + 1'b1;
+            if(minutes_po == 6'b111100)
+            begin
+            hours_po = hours_po + 1'b1;
+            minutes_po = 6'b00000;
+                if(hours_po == 4'b1101 )
+                 begin
+                 hours_po = 4'b0001;
+                 end
+                 end         
+            end
+    end	
 		// STEP 2 - implement the clock state machine	
-	
+	if(increment_minute_pi == 1'b1)
+    begin
+    minutes_po = minutes_po + 1'b1;
+                     
+    if(minutes_po == 6'b111100)
+    begin
+    minutes_po = 6'b00000;
+    end 
+                     
+    end
+    if(increment_hour_pi == 1'b1)
+    begin
+    hours_po = hours_po + 1'b1;
+                                     
+    if(hours_po == 4'b1101 )
+    begin
+    hours_po = 4'b0001;
+    end
+                                     
+    end
+
 		// END STEP 2
 	end
 endmodule // clock_fsm
@@ -208,48 +248,75 @@ endmodule // clock_fsm
 	
 	input increment_minute_pi,
 	input increment_hour_pi,
+	input snooze_btn,
 	
 	output reg alarm_triggered_po);
- 
+    
+    reg [5:0] snooze_minutes_po;
+    reg [3:0] snooze_hours_po;
+    reg snooze;
+    
 	initial begin
 		minutes_po <= 0;
 		hours_po <= 4'd12;
 		alarm_triggered_po <= 0;
+		snooze_minutes_po = minutes_po;
+		snooze_hours_po = hours_po;
+		snooze <= 0;
 	end
  
 	 // STEP 1 - implement the alarm state machine
-	always@(posedge clk_pi) begin
-	 if((alarm_en_pi == 1'b1) && (clock_hours_pi == hours_po) && (clock_minutes_pi == minutes_po))
-             begin
+	always@(posedge clk_pi)begin
+	if((alarm_en_pi == 1'b1) && (clock_hours_pi == hours_po) && (clock_minutes_pi == minutes_po))begin
+            alarm_triggered_po = 1'b1;
+            if(snooze_btn == 1'b1) begin
+                snooze_minutes_po = minutes_po + 6'd5;
+                if(snooze_minutes_po >= 6'b111100)
+                begin
+                    snooze_minutes_po = snooze_minutes_po - 6'b111100;
+                    snooze_hours_po = hours_po + 4'd1;
+                    if(snooze_hours_po == 4'b1101 )
+                    begin
+                        snooze_hours_po = 4'b0001;
+                    end 
+                end 
+                alarm_triggered_po = 1'b0;
+                snooze = 1'b1;
+            end
+    end
+    if((snooze == 1'b1) && (alarm_en_pi == 1'b1) && (clock_hours_pi == snooze_hours_po) && (clock_minutes_pi == snooze_minutes_po)) begin
         alarm_triggered_po = 1'b1;
-             end
+        snooze = 0;
+    end
+    
+    if(alarm_en_pi == 1'b0) begin
+    alarm_triggered_po = 1'b0;
+    end             
 	else begin		 
-        alarm_triggered_po = 1'b0;     
+                          
+                 //handles minutes increment 
+                 if(increment_minute_pi == 1'b1)
+                 begin
+                 minutes_po = minutes_po + 1'b1;
              
-	//handles minutes increment 
-	if(increment_minute_pi == 1'b1)
-	begin
-	minutes_po = minutes_po + 1'b1;
-
-		if(minutes_po == 6'b111100)
-			begin
-			minutes_po = 6'b000001;
-			end 
-
-	end
-   
-            //handles hours increment 
-   
+                     if(minutes_po == 6'b111100)
+                         begin
+                         minutes_po = 6'b00000;
+                         end 
+             
+                 end
+            end
 	if(increment_hour_pi == 1'b1)
-	begin
-	hours_po = hours_po + 1'b1;
+                begin
+                hours_po = hours_po + 1'b1;
+            
+                    if(hours_po == 4'b1101 )
+                    begin
+                    hours_po = 4'b0001;
+                    end
+            
+                end
 
-		if(hours_po == 4'b1100 )
-		begin
-		hours_po = 4'b0001;
-		end
-
-	end
 	end
 	// END STEP 1
  
