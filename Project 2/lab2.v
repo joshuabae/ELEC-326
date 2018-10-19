@@ -7,7 +7,7 @@
 module alarm_clock (
 	input CLK,
 	input [7:0] SW,
-	input [3:0] BTN,
+	input [4:0] BTN,
 	output [7:0] LED,
 	output [6:0] SEG,
 	output DP,
@@ -36,14 +36,14 @@ module alarm_clock (
 	reg blink;
 	
 	// alarms
-	wire alarm0_triggered, alarm1_triggered;
+	wire alarm0_triggered, alarm1_triggered; 
 	wire [5:0] alarm0_minutes;
 	wire [3:0] alarm0_hours;
 	wire [5:0] alarm1_minutes;
 	wire [3:0] alarm1_hours;
 	
 	// Debounce
-	wire [1:0] BTN_down;
+	wire [2:0] BTN_down;
 		
 	// base 10 formatting
 	assign display_num[15:12] = clock_hours_tens_digit;
@@ -51,7 +51,7 @@ module alarm_clock (
 	assign display_num[7:4]   = clock_minutes_tens_digit;
 	assign display_num[3:0]   = clock_minutes_ones_digit;
 	
-	assign LED = {alarm1_triggered & blink, alarm0_triggered & blink, clock_seconds};
+	assign LED = {alarm1_triggered & blink, alarm0_triggered & blink, clock_seconds};  
 	assign DP = (~blink_en | blink) ? AN[2] : 1'b1;
 	
 	display_clkdiv Idisplay_clkdiv (
@@ -89,7 +89,8 @@ module alarm_clock (
 		
 		.increment_minute_pi(BTN_down[0] & BTN[2]),
 		.increment_hour_pi(BTN_down[1] & BTN[2]),
-		.snooze_btn(BTN[4]),
+		
+		.snooze_btn(BTN_down[2]),
 		
 		.alarm_triggered_po(alarm0_triggered)); 
 		
@@ -104,8 +105,9 @@ module alarm_clock (
 		
 		.increment_minute_pi(BTN_down[0] & BTN[3]),
 		.increment_hour_pi(BTN_down[1] & BTN[3]),
-		.snooze_btn(BTN[4]),
 		
+		.snooze_btn(BTN_down[2]),
+
 		.alarm_triggered_po(alarm1_triggered)); 
 		
 	sevenSegDisplay IsevenSegDisplay (
@@ -134,6 +136,11 @@ module alarm_clock (
 		.clk(CLK),
 		.pushbutton(BTN[1]),
 		.pushbutton_down(BTN_down[1]));
+		
+			button_debouncer Ibtn2_debouncer (
+            .clk(CLK),
+            .pushbutton(BTN[4]),
+            .pushbutton_down(BTN_down[2]));
 
 	initial begin
 		blink <= 0;
@@ -254,70 +261,77 @@ endmodule // clock_fsm
     
     reg [5:0] snooze_minutes_po;
     reg [3:0] snooze_hours_po;
-    reg snooze;
+    reg snooze_en;
     
 	initial begin
 		minutes_po <= 0;
 		hours_po <= 4'd12;
 		alarm_triggered_po <= 0;
-		snooze_minutes_po = minutes_po;
-		snooze_hours_po = hours_po;
-		snooze <= 0;
 	end
  
 	 // STEP 1 - implement the alarm state machine
 	always@(posedge clk_pi)begin
-	if((alarm_en_pi == 1'b1) && (clock_hours_pi == hours_po) && (clock_minutes_pi == minutes_po))begin
-            alarm_triggered_po = 1'b1;
-            if(snooze_btn == 1'b1) begin
-                snooze_minutes_po = minutes_po + 6'd5;
-                if(snooze_minutes_po >= 6'b111100)
-                begin
-                    snooze_minutes_po = snooze_minutes_po - 6'b111100;
-                    snooze_hours_po = hours_po + 4'd1;
-                    if(snooze_hours_po == 4'b1101 )
-                    begin
-                        snooze_hours_po = 4'b0001;
-                    end 
-                end 
-                alarm_triggered_po = 1'b0;
-                snooze = 1'b1;
-            end
-    end
-    if((snooze == 1'b1) && (alarm_en_pi == 1'b1) && (clock_hours_pi == snooze_hours_po) && (clock_minutes_pi == snooze_minutes_po)) begin
-        alarm_triggered_po = 1'b1;
-        snooze = 0;
-    end
-    
-    if(alarm_en_pi == 1'b0) begin
+    ///////////////////////////////////////////////////////
+    //BASE CASE IF ALARM IS NOT ENABLED
+    if(alarm_en_pi == 1'b0) // if switches are down alarm can't be triggered 
+    begin
     alarm_triggered_po = 1'b0;
-    end             
-	else begin		 
-                          
-                 //handles minutes increment 
-                 if(increment_minute_pi == 1'b1)
-                 begin
-                 minutes_po = minutes_po + 1'b1;
-             
-                     if(minutes_po == 6'b111100)
-                         begin
-                         minutes_po = 6'b00000;
-                         end 
-             
-                 end
-            end
-	if(increment_hour_pi == 1'b1)
-                begin
-                hours_po = hours_po + 1'b1;
-            
-                    if(hours_po == 4'b1101 )
-                    begin
-                    hours_po = 4'b0001;
-                    end
-            
-                end
+    end
+    //IF NOT ENABLED THEN MEANS IT HAS TO BE ON
+    else if((clock_hours_pi == hours_po) && (clock_minutes_pi == minutes_po) && snooze_en == 1'b0) // if alarm enabled and clock matches alarm then
+    begin
+    alarm_triggered_po = 1'b1; // trigger the alarm       
+    end
+    ///////////////////////////////////////////////////////                             
+    //HANDLES MINUTES INCREMENTS 
+    if(increment_minute_pi == 1'b1)
+    begin
+    minutes_po = minutes_po + 1'b1;
 
-	end
+        if(minutes_po == 6'b111100)
+        begin
+        minutes_po = 6'b00000;
+        end 
+    end    
+    ///////////////////////////////////////////////////////    
+    //HANDLES HOURS INCREMENTS 
+    if(increment_hour_pi == 1'b1)
+    begin
+    hours_po = hours_po + 1'b1;  
+        if(hours_po == 4'b1101)
+        begin
+        hours_po = 4'b0001;
+        end
+    end
+    ///////////////////////////////////////////////////////    
+    //HANDLES IF SNOOZE IS ACTIVATED 
+    if(alarm_triggered_po == 1'b1 && snooze_btn == 1'b1) 
+    begin // if snooze is enabled 
+    snooze_en = 1'b1;
+    snooze_hours_po = clock_hours_pi;
+    snooze_minutes_po = clock_minutes_pi + 6'b000101; // snooze minutes equals time now + 5 min 
+    alarm_triggered_po = 1'b0; // set alarm trigger off
+    
+        if(snooze_minutes_po == 6'b111100) // if snooze minutes is equal to 60 
+        begin
+        snooze_minutes_po = snooze_minutes_po - 6'b111100; //snooze minutes is set to 5 min 
+        snooze_hours_po = hours_po + 4'd001; // increment hours by one since min overflowed
+            if(snooze_hours_po == 4'b1101 ) // if hours overflows then set it equal to 1 
+            begin
+            snooze_hours_po = 4'b0001; // setting hours equal to 1 
+            end 
+        end 
+    end
+    //HANDLES WHEN TIME HITS SNOOZE DEADLINE 
+    if((snooze_en == 1'b1) && (alarm_en_pi == 1'b1) && (clock_hours_pi == snooze_hours_po) && (clock_minutes_pi == snooze_minutes_po)) 
+    begin
+
+        alarm_triggered_po = 1'b1;
+        snooze_en = 1'b0;
+    end          
+	end // FOR THE ALWAYS@
+    ///////////////////////////////////////////////////////
+
 	// END STEP 1
  
  
