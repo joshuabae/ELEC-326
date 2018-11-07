@@ -131,7 +131,32 @@ module instruction_decode (
 	output rst_cmd
 );
 
+  assign alu_func           = instruction [2:0];
+  assign destination_reg    = instruction [11:9];
+  assign source_reg1        = (arith_2op == 1 || arith_1op == 1)? instruction [8:6]: instruction [11:9];
+  assign source_reg2        = (arith_2op == 1 || arith_1op == 1)? instruction [5:3]: instruction [8:6];
+  assign immediate          = instruction [11:0]; 
+  assign arith_2op          = instruction [15:12] == `ARITH_2OP;
+  assign arith_1op          = instruction [15:12] == `ARITH_1OP;
+  assign movi_lower         = instruction [15:12] == `MOVI && instruction[9] == 0 ;
+  assign movi_higher        = instruction [15:12] == `MOVI && instruction[9] == 1 ;
+  assign addi               = instruction [15:12] == `ADDI;
+  assign subi               = instruction [15:12] == `SUBI;
+  assign load               = instruction [15:12] == `LOAD;
+  assign store              = instruction [15:12] == `STOR;
+  assign branch_eq          = instruction [15:12] == `BEQ;
+  assign branch_ge          = instruction [15:12] == `BGE;
+  assign branch_le          = instruction [15:12] == `BLE;
+  assign branch_carry       = instruction [15:12] == `BC;
+  assign jump               = instruction [15:12] == `J;
+  assign stc_cmd            = instruction [15:12] == `CONTROL   && instruction [11:0] == `STC;
+  assign stb_cmd            = instruction [15:12] == `CONTROL   && instruction [11:0] == `STB;
+  assign halt_cmd           = instruction [15:12] == `CONTROL   && instruction [11:0] == `HALT;
+  assign rst_cmd            = instruction [15:12] == `CONTROL   && instruction [11:0] == `RESET;
+
 // STEP 1 - decode instruction
+
+
 		
 endmodule
 
@@ -169,12 +194,50 @@ module reg_file (
 		
 	// STEP 2 - Registers
 	reg [15:0] registers [7:0];
-	
-	
+	reg [15:0] tmp;
+	////////////////////////////
+	assign reg1_data = registers[source_reg1];   
+	assign reg2_data = registers[source_reg2];   
+	assign regD_data = registers[destination_reg];
+	   
+
+    integer i;
+    
+    always@(posedge clk)
+    begin    
+    if(clk_en)    
+    begin
+        
+//    if(reset)
+//    begin
+//        for(i=0; i<8; i=i+1) begin
+//            registers[i] <= 16'b0;
+//        end 
+//    end    
+       
+        if (wr_destination_reg)
+        begin 
+            registers[destination_reg] <= dest_result_data;
+            //tmp <= registers[destination_reg];
+            if(movi_lower)begin
+                //tmp[7:0] <= immediate; 
+                registers[destination_reg][7:0]  <= immediate;
+            end    
+            if(movi_higher)begin
+                //tmp[15:8] <= immediate;
+                registers[destination_reg][15:8] <= immediate;
+            end    
+             
+        end
+    
+    end    
+    end
+    
+    
 	// TEMPORARY - REMOVE WHEN YOU BEGIN STEP 2
-	assign reg1_data = 16'h9000;
-	assign reg2_data = 16'h9000;
-	assign regD_data = 16'hcafe;
+//	assign reg1_data = 16'h9000;
+//	assign reg2_data = 16'h9000;
+//	assign regD_data = 16'hcafe;
 	
 endmodule
 
